@@ -53,9 +53,97 @@ Options:
 EOF
 }
 
-# 暂存函数（后续任务实现）
-cmd_list()    { log_warn "list 命令将在后续任务中实现"; }
-cmd_install() { log_warn "install 命令将在后续任务中实现"; }
+# 列出所有平台已装 vs 清单差异
+cmd_list() {
+  local all_platforms=(${PLATFORMS[@]})
+  local diff_output=""
+
+  for platform in "${all_platforms[@]}"; do
+    echo ""
+    echo "=== $(tr '[:lower:]' '[:upper:]' <<<"${platform:0:1}")${platform:1} ==="
+
+    # 检查适配器是否可用
+    local list_func="${platform}_list_installed"
+    if ! declare -F "$list_func" &>/dev/null; then
+      log_warn "平台 $platform 适配器未实现"
+      continue
+    fi
+
+    # 收集已安装资源
+    local installed=$($list_func 2>/dev/null || true)
+    if [[ -z "$installed" ]]; then
+      echo "  (无已安装资源)"
+    else
+      echo "$installed" | while IFS=' ' read -r type name status; do
+        echo "  $type: $name ✓"
+      done
+    fi
+
+    # 对比 manifest 差异
+    local types=("skill" "mcp" "plugin")
+    for t in "${types[@]}"; do
+      local resources=($(get_resources "$t" 2>/dev/null || true))
+      for r in "${resources[@]}"; do
+        if ! echo "$installed" | grep -q "$t $r "; then
+          diff_output+="  $platform/$t/$r: 清单有，未安装"$'\n'
+        fi
+      done
+    done
+  done
+
+  if [[ -n "$diff_output" ]]; then
+    echo ""
+    echo "=== 差异对比 ==="
+    echo "$diff_output"
+  fi
+}
+
+# 安装缺失资源
+cmd_install() {
+  local all_platforms=(${PLATFORMS[@]})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local count=0
+
+  for platform in "${all_platforms[@]}"; do
+    echo ""
+    echo "=== 安装到 $(tr '[:lower:]' '[:upper:]' <<<"${platform:0:1}")${platform:1} ==="
+
+    local install_skill_func="${platform}_install_skill"
+    local install_mcp_func="${platform}_install_mcp"
+    local install_plugin_func="${platform}_install_plugin"
+
+    for t in "${types[@]}"; do
+      local resources=($(get_resources "$t" 2>/dev/null || true))
+
+      # 如果指定了资源名，只安装指定的
+      if [[ -n "$RESOURCE_NAME" ]]; then
+        resources=($RESOURCE_NAME)
+      fi
+
+      for r in "${resources[@]}"; do
+        # 检查是否已安装
+        local installed=$(${platform}_list_installed 2>/dev/null | grep "^$t $r " || true)
+        if [[ -n "$installed" ]]; then
+          log_info "$platform/$t/$r 已安装，跳过"
+          continue
+        fi
+
+        # 调对应的 install 函数
+        local install_func="${platform}_install_${t}"
+        if declare -F "$install_func" &>/dev/null; then
+          if $install_func "$r"; then
+            ((count++))
+          fi
+        else
+          log_warn "$platform 不支持安装 $t"
+        fi
+      done
+    done
+  done
+
+  echo ""
+  log_info "安装完成，共处理 $count 个资源"
+}
 
 main() {
   parse_args "$@"
@@ -65,7 +153,8 @@ main() {
   [[ ${#PLATFORMS[@]} -eq 0 ]] && die "未检测到任何支持的平台"
 
   # 加载 manifest
-  load_manifest || die "无法加载 manifest.toml"
+  load_and_cache
+  [[ -z "$MANIFEST_JSON" ]] && die "无法加载 manifest.toml"
 
   case "$COMMAND" in
     list)
