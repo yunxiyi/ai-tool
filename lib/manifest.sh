@@ -45,7 +45,7 @@ get_resource_field() {
 import sys, json
 data = json.loads('$MANIFEST_JSON')
 for section in ['skills', 'mcp', 'plugins']:
-    if name in data.get(section, {}):
+    if '$name' in data.get(section, {}):
         val = data[section]['$name']
         # 支持点号路径如 'source.type'
         parts = '$field'.split('.')
