@@ -20,6 +20,7 @@ install_resource() {
     local)
       local src_path
       src_path=$(get_resource_field "$name" "source.path")
+      [[ -z "$src_path" ]] && die "资源 $name 缺少 source.path"
       src_path="$SCRIPT_DIR/$src_path"
       if [[ -d "$src_path" ]]; then
         log_info "资源 $name 已存在: $src_path"
@@ -39,7 +40,7 @@ install_resource() {
       local dest="$CACHE_DIR/git/$name"
       if [[ -d "$dest/.git" ]]; then
         log_info "更新 git 仓库: $repo ($ref)"
-        (cd "$dest" && git fetch origin && git checkout "$ref" && git pull) 2>/dev/null || true
+        (cd "$dest" && git fetch origin && git checkout "$ref") || true
       else
         log_info "克隆 git 仓库: $repo"
         git clone --depth 1 --branch "$ref" "https://github.com/$repo.git" "$dest"
