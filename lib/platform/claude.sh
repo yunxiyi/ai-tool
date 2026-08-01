@@ -43,9 +43,13 @@ claude_install_mcp() {
 
   # 用 python3 编辑 mcp.json（安全追加，不破坏已有内容）
   python3 -c "
-import json
-with open('$CLAUDE_MCP_JSON') as f:
-    cfg = json.load(f)
+import json, os
+try:
+    with open('$CLAUDE_MCP_JSON') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
+    os.makedirs(os.path.dirname('$CLAUDE_MCP_JSON'), exist_ok=True)
 if '$name' in cfg.get('mcpServers', {}):
     print('already_installed')
 else:
@@ -78,9 +82,13 @@ claude_install_plugin() {
   # 1. 将 marketplace 注册到 known_marketplaces.json
   local known_mkt="$CLAUDE_HOME/plugins/known_marketplaces.json"
   python3 -c "
-import json
-with open('$known_mkt') as f:
-    mkt = json.load(f)
+import json, os
+try:
+    with open('$known_mkt') as f:
+        mkt = json.load(f)
+except FileNotFoundError:
+    mkt = {}
+    os.makedirs(os.path.dirname('$known_mkt'), exist_ok=True)
 key = '$mkt_name'
 if key not in mkt:
     mkt[key] = {
@@ -97,8 +105,11 @@ if key not in mkt:
   python3 -c "
 import json, os
 os.makedirs(os.path.dirname('$inst_plugins'), exist_ok=True)
-with open('$inst_plugins') as f:
-    data = json.load(f)
+try:
+    with open('$inst_plugins') as f:
+        data = json.load(f)
+except FileNotFoundError:
+    data = {}
 key = '$name@$mkt_name'
 if key not in data.get('plugins', {}):
     data.setdefault('plugins', {})[key] = [{
@@ -115,8 +126,11 @@ if key not in data.get('plugins', {}):
   # 3. 启用插件
   python3 -c "
 import json
-with open('$CLAUDE_SETTINGS_JSON') as f:
-    cfg = json.load(f)
+try:
+    with open('$CLAUDE_SETTINGS_JSON') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
 key = '$name@$mkt_name'
 if key not in cfg.get('enabledPlugins', {}):
     cfg.setdefault('enabledPlugins', {})[key] = True

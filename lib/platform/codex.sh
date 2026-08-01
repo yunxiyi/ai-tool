@@ -71,13 +71,16 @@ codex_install_mcp() {
     return 0
   fi
 
-  cat >> "$CODEX_CONFIG" <<-EOF
+  python3 -c "
+with open('$CODEX_CONFIG', 'a') as f:
+    f.write('''
 
 [mcp_servers.$name]
-type = "stdio"
-command = "$command"
+type = \"stdio\"
+command = \"$command\"
 args = [$args]
-EOF
+''')
+"
   log_info "Codex: mcp $name 已配置"
 }
 
@@ -94,10 +97,13 @@ codex_install_plugin() {
     return 0
   fi
 
-  cat >> "$CODEX_CONFIG" <<-EOF
+  python3 -c "
+with open('$CODEX_CONFIG', 'a') as f:
+    f.write('''
 
-[plugins."$name@$mkt_name"]
+[plugins.\"$name@$mkt_name\"]
 enabled = true
-EOF
+''')
+"
   log_info "Codex: plugin $name 已启用"
 }

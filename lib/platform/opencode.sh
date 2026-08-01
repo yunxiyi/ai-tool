@@ -37,8 +37,11 @@ opencode_install_skill() {
 
   python3 -c "
 import json
-with open('$OPENCODE_CONFIG') as f:
-    cfg = json.load(f)
+try:
+    with open('$OPENCODE_CONFIG') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
 cfg.setdefault('skills', {}).setdefault('paths', [])
 if '$src' not in cfg['skills']['paths']:
     cfg['skills']['paths'].append('$src')
@@ -64,8 +67,11 @@ opencode_install_mcp() {
 
   python3 -c "
 import json
-with open('$OPENCODE_CONFIG') as f:
-    cfg = json.load(f)
+try:
+    with open('$OPENCODE_CONFIG') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
 if '$name' in cfg.get('mcpServers', {}):
     print('already_installed')
 else:
@@ -92,8 +98,11 @@ opencode_install_plugin() {
 
   python3 -c "
 import json
-with open('$OPENCODE_CONFIG') as f:
-    cfg = json.load(f)
+try:
+    with open('$OPENCODE_CONFIG') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
 key = '$name@$mkt_name'
 cfg.setdefault('plugins', {})[key] = {'enabled': True}
 with open('$OPENCODE_CONFIG', 'w') as f:
