@@ -51,7 +51,7 @@ for section in ['skills', 'mcp', 'plugins']:
         parts = '$field'.split('.')
         for p in parts:
             val = val.get(p, {}) if isinstance(val, dict) else ''
-        print(json.dumps(val) if isinstance(val, (dict, list)) else val)
+        print(json.dumps(val) if isinstance(val, (dict, list)) and len(val) > 0 else ('' if isinstance(val, (dict, list)) else val))
         sys.exit(0)
 print('')
 " "$name"

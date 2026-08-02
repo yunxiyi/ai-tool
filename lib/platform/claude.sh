@@ -148,5 +148,56 @@ else:
   log_info "Claude: plugin $name 已安装"
 }
 
-# 简化：skill 安装走同样的 marketplace 流程
-claude_install_skill() { claude_install_plugin "$@"; }
+# 卸载 mcp
+claude_uninstall_mcp() {
+  local name="$1"
+  python3 -c "
+import json, os
+try:
+    with open('$CLAUDE_MCP_JSON') as f:
+        cfg = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    print('not_found')
+    sys.exit(0)
+import sys
+if '$name' in cfg.get('mcpServers', {}):
+    del cfg['mcpServers']['$name']
+    with open('$CLAUDE_MCP_JSON', 'w') as f:
+        json.dump(cfg, f, indent=2)
+    print('removed')
+else:
+    print('not_found')
+" 2>/dev/null | grep -q 'removed' && log_info "Claude: mcp $name 已卸载" || log_info "Claude: mcp $name 未安装"
+}
+
+# 卸载 plugin
+claude_uninstall_plugin() {
+  local name="$1"
+  local mkt_name
+  mkt_name=$(get_resource_field "$name" "source.name")
+  local key="$name@$mkt_name"
+
+  # 从 settings.json 的 enabledPlugins 移除
+  python3 -c "
+import json, sys
+try:
+    with open('$CLAUDE_SETTINGS_JSON') as f:
+        cfg = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    print('not_found')
+    sys.exit(0)
+removed = False
+if '$key' in cfg.get('enabledPlugins', {}):
+    del cfg['enabledPlugins']['$key']
+    removed = True
+if removed:
+    with open('$CLAUDE_SETTINGS_JSON', 'w') as f:
+        json.dump(cfg, f, indent=2)
+    print('removed')
+else:
+    print('not_found')
+" 2>/dev/null | grep -q 'removed' && log_info "Claude: plugin $name 已卸载" || log_info "Claude: plugin $name 未安装"
+}
+
+# 简化：skill 卸载走同样的流程
+claude_uninstall_skill() { claude_uninstall_plugin "$@"; }

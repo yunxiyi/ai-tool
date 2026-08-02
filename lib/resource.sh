@@ -9,6 +9,15 @@ CACHE_DIR="$SCRIPT_DIR/.cache"
 install_resource() {
   local name="$1" type="$2"
 
+  # 先检查 install.type 是否为 none — 无需获取资源
+  local install_type
+  install_type=$(get_resource_field "$name" "install.type")
+  if [[ "$install_type" == "none" ]]; then
+    log_info "资源 $name 无需安装（纯配置）"
+    echo ""
+    return 0
+  fi
+
   # 从 manifest 读 source 信息
   local source_type
   source_type=$(get_resource_field "$name" "source.type")
@@ -70,11 +79,6 @@ install_resource() {
       pkg=$(get_resource_field "$name" "install.package")
       log_info "安装 npm 包: $pkg"
       npm install -g "$pkg"
-      echo ""
-      ;;
-
-    none)
-      log_info "资源 $name 无需安装（纯配置）"
       echo ""
       ;;
 

@@ -107,3 +107,60 @@ enabled = true
 "
   log_info "Codex: plugin $name 已启用"
 }
+
+# 卸载 skill
+codex_uninstall_skill() {
+  local name="$1"
+  local link_path="$CODEX_SKILLS_DIR/$name"
+  if [[ -L "$link_path" ]]; then
+    rm "$link_path"
+    log_info "Codex: skill $name 已卸载"
+    return 0
+  elif [[ -e "$link_path" ]]; then
+    log_warn "skill $name 路径存在但不是软链，跳过"
+    return 1
+  else
+    log_info "Codex: skill $name 未安装"
+    return 0
+  fi
+}
+
+# 卸载 mcp
+codex_uninstall_mcp() {
+  local name="$1"
+  if ! grep -q "\[mcp_servers.$name\]" "$CODEX_CONFIG" 2>/dev/null; then
+    log_info "Codex: mcp $name 未配置"
+    return 0
+  fi
+
+  python3 -c "
+import configparser, os
+cfg = configparser.ConfigParser()
+cfg.read('$CODEX_CONFIG')
+section = 'mcp_servers.$name'
+if cfg.remove_section(section):
+    with open('$CODEX_CONFIG', 'w') as f:
+        cfg.write(f)
+    print('removed')
+" 2>/dev/null
+  log_info "Codex: mcp $name 已卸载"
+}
+
+# 卸载 plugin
+codex_uninstall_plugin() {
+  local name="$1"
+  python3 -c "
+import configparser, sys
+cfg = configparser.ConfigParser()
+cfg.read('$CODEX_CONFIG')
+removed = False
+for section in list(cfg.sections()):
+    if section.startswith('plugins.') and '$name@' in section:
+        cfg.remove_section(section)
+        removed = True
+if removed:
+    with open('$CODEX_CONFIG', 'w') as f:
+        cfg.write(f)
+    print('removed')
+" 2>/dev/null | grep -q 'removed' && log_info "Codex: plugin $name 已卸载" || log_info "Codex: plugin $name 未安装"
+}

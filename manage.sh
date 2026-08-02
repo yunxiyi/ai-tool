@@ -13,7 +13,7 @@ source "$LIB_DIR/manifest.sh"
 source "$LIB_DIR/resource.sh"
 
 # 加载所有平台适配器
-for platform in codex claude opencode; do
+for platform in codex claude opencode trae; do
   adapter="$LIB_DIR/platform/${platform}.sh"
   [[ -f "$adapter" ]] && source "$adapter"
 done
@@ -36,6 +36,14 @@ parse_args() {
   done
   COMMAND="${args[0]:-}"
   RESOURCE_NAME="${args[1]:-}"
+
+  # -h/--help 出现在任何位置都显示帮助
+  for arg in "${args[@]}"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+      usage
+      exit 0
+    fi
+  done
 }
 
 usage() {
@@ -45,9 +53,10 @@ Usage: ./manage.sh <command> [options] [name]
 Commands:
   list             收集各平台已装资源 vs 清单差异
   install          安装所有缺失资源
+  uninstall        卸载已安装的资源
 
 Options:
-  --platform <name>  限定平台 (codex|claude|opencode)
+  --platform <name>  限定平台 (codex|claude|opencode|trae)
   --type <type>      限定资源类型 (skill|mcp|plugin)
   -h, --help         显示帮助
 EOF
@@ -145,6 +154,48 @@ cmd_install() {
   log_info "安装完成，共处理 $count 个资源"
 }
 
+# 卸载资源
+cmd_uninstall() {
+  local all_platforms=(${PLATFORMS[@]})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local count=0
+
+  for platform in "${all_platforms[@]}"; do
+    echo ""
+    echo "=== 从 $(tr '[:lower:]' '[:upper:]' <<<"${platform:0:1}")${platform:1} 卸载 ==="
+
+    for t in "${types[@]}"; do
+      local resources=($(get_resources "$t" 2>/dev/null || true))
+
+      # 如果指定了资源名，只卸载指定的
+      if [[ -n "$RESOURCE_NAME" ]]; then
+        resources=($RESOURCE_NAME)
+      fi
+
+      for r in "${resources[@]}"; do
+        # 检查是否已安装
+        local installed=$(${platform}_list_installed 2>/dev/null | grep "^$t $r " || true)
+        if [[ -z "$installed" ]]; then
+          log_info "$platform/$t/$r 未安装，跳过"
+          continue
+        fi
+
+        local uninstall_func="${platform}_uninstall_${t}"
+        if declare -F "$uninstall_func" &>/dev/null; then
+          if $uninstall_func "$r"; then
+            ((count++))
+          fi
+        else
+          log_warn "$platform 不支持卸载 $t"
+        fi
+      done
+    done
+  done
+
+  echo ""
+  log_info "卸载完成，共处理 $count 个资源"
+}
+
 main() {
   parse_args "$@"
 
@@ -162,6 +213,9 @@ main() {
       ;;
     install)
       cmd_install
+      ;;
+    uninstall)
+      cmd_uninstall
       ;;
     "")
       usage

@@ -16,12 +16,13 @@ log_error() { echo -e "${RED}✗${NC} $*" >&2; }
 die()       { log_error "$*"; exit 1; }
 
 # 检测已安装的平台
-# 输出: 空格分隔的平台名列表（codex claude opencode）
+# 输出: 空格分隔的平台名列表（codex claude opencode trae）
 detect_platforms() {
   local platforms=()
   [[ -f "$HOME/.codex/config.toml" ]] && platforms+=("codex")
   [[ -f "$HOME/.claude/settings.json" ]] && platforms+=("claude")
   [[ -f "$HOME/.config/opencode/opencode.json" ]] && platforms+=("opencode")
+  [[ -f "$HOME/.trae-cn/skill-config.json" ]] && platforms+=("trae")
   echo "${platforms[@]}"
 }
 
