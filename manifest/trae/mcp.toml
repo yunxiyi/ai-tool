@@ -1,0 +1,35 @@
+[mcp.mcp_filesystem]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_stack-40aa0d9d/solo_agent_lite/mcp_filesystem"
+
+[mcp.mcp_codegraph]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_stack-40aa0d9d/solo_agent_lite/mcp_codegraph"
+
+[mcp.mcp_context7]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_stack-40aa0d9d/solo_agent_lite/mcp_context7"
+
+[mcp.mcp_memory]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_stack-40aa0d9d/solo_agent_lite/mcp_memory"
+
+[mcp.integrated_browser]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_6a37c3a879538a938ec41e15-bedd8fa0/solo_work_lite/integrated_browser"
+
+[mcp.deepwiki]
+url = "https://mcp.deepwiki.com/mcp"
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_managed/solo_agent_lite/deepwiki"
+
+[mcp.codegraph]
+command = "codegraph"
+args = [["serve", "--mcp"]]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_managed/solo_agent_lite/codegraph"
+
+[mcp.integrated_code_mode]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/mcps/s_zshrc-5498ecab/solo_agent_lite/integrated_code_mode"
+

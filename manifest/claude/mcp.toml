@@ -1,0 +1,6 @@
+[mcp.codegraph]
+command = "codegraph"
+source.type = "local"
+source.path = "codegraph"
+args = ["serve", "--mcp"]
+

@@ -196,3 +196,63 @@ trae_uninstall_mcp() {
     log_info "TRAE: mcp $name 未安装"
   fi
 }
+
+# 描述 skill 的安装信息
+trae_describe_skill() {
+  local name="$1"
+
+  # 检查是否为 builtin skill（无需安装）
+  if [[ -f "$TRAE_SKILL_CONFIG" ]]; then
+    python3 -c "
+import json
+with open('$TRAE_SKILL_CONFIG') as f:
+    data = json.load(f)
+if '$name' in data.get('builtinSkillStatus', {}):
+    print('install.type=none')
+" 2>/dev/null || true
+  fi
+
+  # 检查本地目录是否存在
+  local dir="$TRAE_SKILLS_DIR/$name"
+  if [[ -d "$dir" ]]; then
+    echo "source.type=local"
+    echo "source.path=$dir"
+  fi
+}
+
+# 描述 mcp 的安装信息
+trae_describe_mcp() {
+  local name="$1"
+
+  if [[ -d "$TRAE_MCPS_DIR" ]]; then
+    python3 -c "
+import os, json
+name = '$name'
+mcps_dir = '$TRAE_MCPS_DIR'
+for root, dirs, files in os.walk(mcps_dir):
+    if 'SERVER_METADATA.json' in files:
+        try:
+            with open(os.path.join(root, 'SERVER_METADATA.json')) as f:
+                meta = json.load(f)
+            if meta.get('server_name') == name:
+                if meta.get('command'):
+                    print(f'command={meta[\"command\"]}')
+                if meta.get('args') is not None:
+                    print(f'args={json.dumps(meta[\"args\"])}')
+                if meta.get('url'):
+                    print(f'url={meta[\"url\"]}')
+                print(f'source.type=local')
+                print(f'source.path={root}')
+                break
+        except Exception:
+            pass
+" 2>/dev/null || true
+  fi
+}
+
+# 描述 plugin 的安装信息
+trae_describe_plugin() {
+  local name="$1"
+  # TRAE 插件由 TRAE 自身管理，无需安装
+  echo "install.type=none"
+}

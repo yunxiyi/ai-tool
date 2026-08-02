@@ -164,3 +164,56 @@ if removed:
     print('removed')
 " 2>/dev/null | grep -q 'removed' && log_info "Codex: plugin $name 已卸载" || log_info "Codex: plugin $name 未安装"
 }
+
+# 描述 skill — 输出 key=value 行
+codex_describe_skill() {
+  local name="$1"
+  local link_path="$CODEX_SKILLS_DIR/$name"
+  if [[ -L "$link_path" ]]; then
+    local target
+    target=$(readlink "$link_path")
+    echo "source.type=local"
+    echo "source.path=$target"
+  elif [[ -d "$link_path" ]]; then
+    echo "source.type=local"
+    echo "source.path=$link_path"
+  fi
+}
+
+# 描述 mcp — 输出 key=value 行
+codex_describe_mcp() {
+  local name="$1"
+  python3 -c "
+import configparser, json, ast, sys
+cfg = configparser.ConfigParser()
+cfg.read('$CODEX_CONFIG')
+section = 'mcp_servers.$name'
+if cfg.has_section(section):
+    command = cfg.get(section, 'command')
+    args_str = cfg.get(section, 'args')
+    try:
+        args_list = ast.literal_eval(args_str)
+        args_json = json.dumps(args_list)
+    except Exception:
+        args_json = '[]'
+    print(f'command={command}')
+    print(f'args={args_json}')
+" 2>/dev/null || true
+}
+
+# 描述 plugin — 输出 key=value 行
+codex_describe_plugin() {
+  local name="$1"
+  python3 -c "
+import configparser, sys
+cfg = configparser.ConfigParser()
+cfg.read('$CODEX_CONFIG')
+for section in cfg.sections():
+    if section.startswith('plugins.') and '\"$name@' in section:
+        after_at = section.split('@', 1)[1]
+        marketplace = after_at.rstrip('\"')
+        print('source.type=marketplace')
+        print(f'source.name={marketplace}')
+        break
+" 2>/dev/null || true
+}

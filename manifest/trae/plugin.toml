@@ -1,0 +1,12 @@
+[plugins."trae-remote-official:lark"]
+install.type = "none"
+
+[plugins."trae-remote-official:browser"]
+install.type = "none"
+
+[plugins."trae-remote-official:seedance"]
+install.type = "none"
+
+[plugins."trae-remote-official:seedream"]
+install.type = "none"
+

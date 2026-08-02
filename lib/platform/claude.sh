@@ -201,3 +201,64 @@ else:
 
 # 简化：skill 卸载走同样的流程
 claude_uninstall_skill() { claude_uninstall_plugin "$@"; }
+
+# 描述 mcp 配置
+claude_describe_mcp() {
+  local name="$1"
+  python3 -c "
+import json, sys
+try:
+    with open('$CLAUDE_MCP_JSON') as f:
+        data = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    sys.exit(0)
+entry = data.get('mcpServers', {}).get('$name')
+if not entry:
+    sys.exit(0)
+cmd = entry.get('command', '')
+print(f'command={cmd}')
+print(f'source.type=local')
+print(f'source.path={cmd}')
+args = entry.get('args')
+if args is not None:
+    print(f'args={json.dumps(args)}')
+" 2>/dev/null
+}
+
+# 描述 plugin 配置
+claude_describe_plugin() {
+  local name="$1"
+  python3 -c "
+import json, sys
+try:
+    with open('$CLAUDE_INSTALLED_PLUGINS') as f:
+        data = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    sys.exit(0)
+plugins = data.get('plugins', {})
+# 插件名可能已含 @marketplace 后缀（如 superpowers@superpowers-marketplace）
+# 先尝试精确匹配，再尝试前缀匹配
+key = '$name'
+mkt_name = None
+if key in plugins:
+    # key 本身就是完整名称，从 name 中提取 @ 后面的部分
+    if '@' in key:
+        mkt_name = key.split('@', 1)[1]
+else:
+    for k in plugins:
+        if k.startswith(key + '@'):
+            mkt_name = k.split('@', 1)[1]
+            break
+if not mkt_name:
+    sys.exit(0)
+try:
+    with open('$CLAUDE_HOME/plugins/known_marketplaces.json') as f:
+        mkt = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    mkt = {}
+repo = mkt.get(mkt_name, {}).get('source', {}).get('repo', '')
+print('source.type=marketplace')
+print(f'source.name={mkt_name}')
+print(f'source.repo={repo}')
+" 2>/dev/null
+}

@@ -1,0 +1,30 @@
+[plugins."superpowers@superpowers-marketplace"]
+source.type = "marketplace"
+source.name = "superpowers-marketplace"
+source.repo = "obra/superpowers-marketplace"
+
+[plugins."ralph-wiggum@claude-code-plugins"]
+source.type = "marketplace"
+source.name = "claude-code-plugins"
+source.repo = "anthropics/claude-code"
+
+[plugins."ralph-loop@claude-plugins-official"]
+source.type = "marketplace"
+source.name = "claude-plugins-official"
+source.repo = "anthropics/claude-plugins-official"
+
+[plugins."superpowers@claude-plugins-official"]
+source.type = "marketplace"
+source.name = "claude-plugins-official"
+source.repo = "anthropics/claude-plugins-official"
+
+[plugins."gopls-lsp@claude-plugins-official"]
+source.type = "marketplace"
+source.name = "claude-plugins-official"
+source.repo = "anthropics/claude-plugins-official"
+
+[plugins."andrej-karpathy-skills@karpathy-skills"]
+source.type = "marketplace"
+source.name = "karpathy-skills"
+source.repo = "forrestchang/andrej-karpathy-skills"
+

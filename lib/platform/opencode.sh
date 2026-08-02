@@ -188,3 +188,56 @@ else:
     print('not_found')
 " 2>/dev/null | grep -q 'removed' && log_info "OpenCode: plugin $name 已卸载" || log_info "OpenCode: plugin $name 未安装"
 }
+
+# 描述 skill
+opencode_describe_skill() {
+  local name="$1"
+  [[ -z "$name" || ! -f "$OPENCODE_CONFIG" ]] && return
+
+  python3 -c "
+import json, sys
+with open('$OPENCODE_CONFIG') as f:
+    cfg = json.load(f)
+n = '$name'
+for p in cfg.get('skills', {}).get('paths', []):
+    if p == n or p.endswith('/' + n):
+        print('source.type=local')
+        print(f'source.path={p}')
+        sys.exit(0)
+" 2>/dev/null
+}
+
+# 描述 mcp
+opencode_describe_mcp() {
+  local name="$1"
+  [[ -z "$name" || ! -f "$OPENCODE_CONFIG" ]] && return
+
+  python3 -c "
+import json, sys
+with open('$OPENCODE_CONFIG') as f:
+    cfg = json.load(f)
+s = cfg.get('mcpServers', {}).get('$name')
+if s:
+    print(f'command={s.get(\"command\", \"\")}')
+    print(f'args={json.dumps(s.get(\"args\", []))}')
+" 2>/dev/null
+}
+
+# 描述 plugin
+opencode_describe_plugin() {
+  local name="$1"
+  [[ -z "$name" || ! -f "$OPENCODE_CONFIG" ]] && return
+
+  python3 -c "
+import json, sys
+with open('$OPENCODE_CONFIG') as f:
+    cfg = json.load(f)
+n = '$name'
+for key in cfg.get('plugins', {}):
+    if key.startswith(n + '@'):
+        mkt = key.split('@', 1)[1]
+        print('source.type=marketplace')
+        print(f'source.name={mkt}')
+        sys.exit(0)
+" 2>/dev/null
+}

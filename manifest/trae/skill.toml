@@ -1,0 +1,72 @@
+[skills.mcp-builder]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/mcp-builder"
+
+[skills.bits-unit-test-gen]
+install.type = "none"
+
+[skills.bits-code-guard]
+install.type = "none"
+
+[skills.bytedance-golang-expert]
+install.type = "none"
+
+[skills.TRAE-dynamic-ui]
+install.type = "none"
+
+[skills.using-git-worktrees]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/using-git-worktrees"
+
+[skills.test-driven-development]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/test-driven-development"
+
+[skills.systematic-debugging]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/systematic-debugging"
+
+[skills.using-superpowers]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/using-superpowers"
+
+[skills.dispatching-parallel-agents]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/dispatching-parallel-agents"
+
+[skills.executing-plans]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/executing-plans"
+
+[skills.finishing-a-development-branch]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/finishing-a-development-branch"
+
+[skills.brainstorming]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/brainstorming"
+
+[skills.writing-plans]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/writing-plans"
+
+[skills.requesting-code-review]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/requesting-code-review"
+
+[skills.receiving-code-review]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/receiving-code-review"
+
+[skills.writing-skills]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/writing-skills"
+
+[skills.verification-before-completion]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/verification-before-completion"
+
+[skills.subagent-driven-development]
+source.type = "local"
+source.path = "/Users/huangrongchao/.trae-cn/skills/subagent-driven-development"
+
