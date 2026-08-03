@@ -29,6 +29,13 @@ for section in config.sections():
         print(f'plugin {name} installed')
 " 2>/dev/null || true
   fi
+
+  # rules: 列出 ~/.codex/rules/ 下的 .rules 文件
+  if [[ -d "$CODEX_HOME/rules" ]]; then
+    for f in "$CODEX_HOME/rules"/*.rules; do
+      [[ -f "$f" ]] && echo "rule $(basename "${f%.rules}") installed"
+    done
+  fi
 }
 
 # 安装 skill
@@ -198,6 +205,39 @@ if cfg.has_section(section):
         args_json = '[]'
     print(f'command={command}')
     print(f'args={args_json}')
+    _c = command.strip()
+    if _c.startswith('npx ') or _c.startswith('npx -y '):
+        parts = _c.split()
+        pkg = None
+        for p in parts[1:]:
+            if not p.startswith('-'):
+                pkg = p
+                break
+        if pkg:
+            print(f'source.type=npm_install')
+            print(f'install.package={pkg}')
+        else:
+            print(f'source.type=local')
+            print(f'source.path={command}')
+    elif _c.startswith('uvx ') or _c.startswith('uvx --'):
+        parts = _c.split()
+        pkg = None
+        for p in parts[1:]:
+            if not p.startswith('-'):
+                pkg = p
+                break
+        if pkg:
+            print(f'source.type=pip_install')
+            print(f'install.package={pkg}')
+        else:
+            print(f'source.type=local')
+            print(f'source.path={command}')
+    elif _c.startswith('go ') or _c.startswith('go-run '):
+        print(f'source.type=local')
+        print(f'source.path={command}')
+    else:
+        print(f'source.type=local')
+        print(f'source.path={command}')
 " 2>/dev/null || true
 }
 
@@ -205,7 +245,7 @@ if cfg.has_section(section):
 codex_describe_plugin() {
   local name="$1"
   python3 -c "
-import configparser, sys
+import configparser, sys, json
 cfg = configparser.ConfigParser()
 cfg.read('$CODEX_CONFIG')
 for section in cfg.sections():
@@ -216,4 +256,51 @@ for section in cfg.sections():
         print(f'source.name={marketplace}')
         break
 " 2>/dev/null || true
+}
+
+# ===== Rule =====
+
+CODEX_RULES_DIR="$CODEX_HOME/rules"
+
+# 安装 rule
+codex_install_rule() {
+  local name="$1"
+  local src
+  src=$(install_resource "$name" "rule")
+  [[ -z "$src" ]] && die "rule $name 资源获取失败"
+
+  mkdir -p "$CODEX_RULES_DIR"
+  local target="$CODEX_RULES_DIR/$name.rules"
+  if [[ -f "$target" ]]; then
+    log_info "Codex: rule $name 已存在"
+    return 0
+  fi
+  cp "$src" "$target"
+  log_info "Codex: rule $name 已安装 ($src → $target)"
+}
+
+# 卸载 rule
+codex_uninstall_rule() {
+  local name="$1"
+  local target="$CODEX_RULES_DIR/$name.rules"
+  if [[ -f "$target" ]]; then
+    rm "$target"
+    log_info "Codex: rule $name 已卸载"
+  else
+    log_info "Codex: rule $name 未安装"
+  fi
+}
+
+# 描述 rule
+codex_describe_rule() {
+  local name="$1"
+  local target="$CODEX_RULES_DIR/$name"
+  # Codex 的 rule 文件是 .rules 后缀
+  if [[ -f "$target.rules" ]]; then
+    echo "source.type=local"
+    echo "source.path=$target.rules"
+  elif [[ -f "$target" ]]; then
+    echo "source.type=local"
+    echo "source.path=$target"
+  fi
 }

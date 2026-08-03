@@ -30,9 +30,8 @@ install_resource() {
       local src_path
       src_path=$(get_resource_field "$name" "source.path")
       [[ -z "$src_path" ]] && die "资源 $name 缺少 source.path"
-      src_path="$SCRIPT_DIR/$src_path"
-      if [[ -d "$src_path" ]]; then
-        log_info "资源 $name 已存在: $src_path"
+      [[ "$src_path" != /* ]] && src_path="$SCRIPT_DIR/$src_path"
+      if [[ -e "$src_path" ]]; then
         echo "$src_path"
       else
         die "本地资源路径不存在: $src_path"
@@ -79,6 +78,14 @@ install_resource() {
       pkg=$(get_resource_field "$name" "install.package")
       log_info "安装 npm 包: $pkg"
       npm install -g "$pkg"
+      echo ""
+      ;;
+
+    pip_install)
+      local pkg
+      pkg=$(get_resource_field "$name" "install.package")
+      log_info "安装 pip 包: $pkg"
+      pip3 install "$pkg"
       echo ""
       ;;
 

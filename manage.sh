@@ -20,8 +20,12 @@ done
 
 # 默认值
 PLATFORM=""
+FROM_PLATFORM=""
+TO_PLATFORM=""
 RESOURCE_TYPE=""
 RESOURCE_NAME=""
+SOURCE_IMPORT=""
+MATCH_IMPORT=""
 POSITIONAL_ARGS=()
 
 # 解析命令行参数
@@ -30,6 +34,10 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --platform) PLATFORM="$2"; shift 2 ;;
+      --from)     FROM_PLATFORM="$2"; shift 2 ;;
+      --to)       TO_PLATFORM="$2"; shift 2 ;;
+      --source)   SOURCE_IMPORT="$2"; shift 2 ;;
+      --match)    MATCH_IMPORT="$2"; shift 2 ;;
       --type)     RESOURCE_TYPE="$2"; shift 2 ;;
       --name)     RESOURCE_NAME="$2"; shift 2 ;;
       -h|--help)  usage; exit 0 ;;
@@ -57,14 +65,21 @@ Usage: ./manage.sh <command> [options] [key=value ...]
   collect          从各平台收集已装资源，写入 manifest
   install          安装 manifest 中缺失的资源
   uninstall        卸载已安装的资源
+  sync             将平台 A 的 manifest 配置同步到平台 B
+  import           从 GitHub 源导入资源（下载 + 添加 manifest + 安装）
   add              添加资源到 manifest
   remove           从 manifest 移除资源
   update           更新 manifest 中资源的字段
+  status           状态概览 — 各平台安装/清单对比表格
   doctor           健康检查（平台配置、manifest 语法、资源完整性）
 
 选项:
   --platform <name>   限定平台 (codex|claude|opencode|trae)
-  --type <type>       限定资源类型 (skill|mcp|plugin)
+  --from <name>       源平台（用于 sync）
+  --to <name>         目标平台（用于 sync）
+  --source <url>      源仓库 URL（用于 import）
+  --match <kw,...>    按关键词过滤（用于 import，逗号分隔）
+  --type <type>       限定资源类型 (skill|mcp|plugin|rule)
   --name <name>       资源名
   -h, --help          显示帮助
 
@@ -76,6 +91,8 @@ Usage: ./manage.sh <command> [options] [key=value ...]
   ./manage.sh show --platform trae --type skill --name brainstorming  查看资源详情
   ./manage.sh collect                  收集已装资源到 manifest
   ./manage.sh install --platform trae  安装 TRAE 缺失资源
+  ./manage.sh sync --from codex --to trae --type skill  将 codex 的 skill 同步到 trae
+  ./manage.sh import --source https://github.com/PatrickJS/awesome-cursorrules --match go,python,rust  导入 Go/Python/Rust 规则
   ./manage.sh add --platform trae --type skill --name foo source.type=local source.path=skills/foo
   ./manage.sh remove --platform trae --type skill --name foo
   ./manage.sh update --platform trae --type skill --name foo source.type=git
@@ -99,18 +116,21 @@ cmd_list() {
       continue
     fi
 
-    # 收集已安装资源
+    # 收集已安装资源（按 --type 过滤）
     local installed=$($list_func 2>/dev/null || true)
     if [[ -z "$installed" ]]; then
       echo "  (无已安装资源)"
     else
       echo "$installed" | while IFS=' ' read -r type name status; do
+        if [[ -n "$RESOURCE_TYPE" && "$type" != "$RESOURCE_TYPE" ]]; then
+          continue
+        fi
         echo "  $type: $name ✓"
       done
     fi
 
     # 对比 manifest 差异
-    local types=(${RESOURCE_TYPE:-skill mcp plugin})
+    local types=(${RESOURCE_TYPE:-skill mcp plugin rule})
     for t in "${types[@]}"; do
       export CURRENT_TYPE="$t"
       local resources_str
@@ -170,7 +190,7 @@ print_fields(data)
 
   # 无 --name 时列出所有资源名
   local all_platforms=(${PLATFORMS[@]})
-  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin rule})
 
   for platform in "${all_platforms[@]}"; do
     export CURRENT_PLATFORM="$platform"
@@ -192,7 +212,7 @@ print_fields(data)
 # 安装缺失资源
 cmd_install() {
   local all_platforms=(${PLATFORMS[@]})
-  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin rule})
   local count=0
 
   for platform in "${all_platforms[@]}"; do
@@ -244,7 +264,7 @@ cmd_install() {
 # 从各平台收集已装资源，写入 manifest/{platform}/{type}.toml
 cmd_collect() {
   local all_platforms=(${PLATFORMS[@]})
-  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin rule})
   local total=0
 
   for platform in "${all_platforms[@]}"; do
@@ -301,7 +321,7 @@ cmd_collect() {
 # 卸载资源
 cmd_uninstall() {
   local all_platforms=(${PLATFORMS[@]})
-  local types=(${RESOURCE_TYPE:-skill mcp plugin})
+  local types=(${RESOURCE_TYPE:-skill mcp plugin rule})
   local count=0
 
   for platform in "${all_platforms[@]}"; do
@@ -345,7 +365,232 @@ cmd_uninstall() {
   log_info "卸载完成，共处理 $count 个资源"
 }
 
-# 添加资源到 manifest
+# 将平台 A 的 manifest 配置同步到平台 B
+cmd_sync() {
+  [[ -n "$FROM_PLATFORM" ]] || die "sync 需要 --from 参数"
+  [[ -n "$TO_PLATFORM" ]] || die "sync 需要 --to 参数"
+  [[ "$FROM_PLATFORM" != "$TO_PLATFORM" ]] || die "源平台和目标平台不能相同"
+
+  local sync_types=(${RESOURCE_TYPE:-skill mcp plugin rule})
+
+  echo ""
+  echo "=== 同步 $FROM_PLATFORM → $TO_PLATFORM ==="
+
+  local output synced_total
+  output=$(export MANIFEST_DIR FROM_PLATFORM TO_PLATFORM SYNC_TYPES="${sync_types[*]}"; python3 -c '
+import sys, json, os, re
+
+try:
+    import tomllib
+    def parse_toml(path):
+        with open(path, "rb") as f:
+            return tomllib.load(f)
+except ImportError:
+    import tomli
+    def parse_toml(path):
+        with open(path, "rb") as f:
+            return tomli.load(f)
+
+def write_toml_fields(f, prefix, fields):
+    for k, v in fields.items():
+        if isinstance(v, dict):
+            write_toml_fields(f, prefix + k + ".", v)
+        elif isinstance(v, list):
+            f.write(prefix + k + " = " + json.dumps(v) + "\n")
+        elif isinstance(v, bool):
+            f.write(prefix + k + " = " + ("true" if v else "false") + "\n")
+        else:
+            f.write(prefix + k + " = " + json.dumps(str(v)) + "\n")
+
+bare_key = re.compile(r"^[A-Za-z0-9_-]+$")
+def quote_key(k):
+    return k if bare_key.match(k) else json.dumps(k)
+
+section_map = {"skill": "skills", "mcp": "mcp", "plugin": "plugins", "rule": "rules"}
+manifest_dir = os.environ["MANIFEST_DIR"]
+from_platform = os.environ["FROM_PLATFORM"]
+to_platform = os.environ["TO_PLATFORM"]
+types = os.environ["SYNC_TYPES"].split()
+total = 0
+lines = []
+
+for t in types:
+    section = section_map.get(t, t + "s")
+    src_file = os.path.join(manifest_dir, from_platform, t + ".toml")
+    if not os.path.exists(src_file):
+        continue
+    try:
+        src_data = parse_toml(src_file)
+    except Exception as e:
+        lines.append("  ⚠️  解析 " + src_file + " 失败: " + str(e))
+        continue
+    if section not in src_data:
+        continue
+
+    dst_file = os.path.join(manifest_dir, to_platform, t + ".toml")
+    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+
+    try:
+        dst_data = parse_toml(dst_file)
+    except Exception:
+        dst_data = {}
+
+    dst_entries = dst_data.get(section, {})
+
+    for name, fields in src_data[section].items():
+        if name in dst_entries:
+            lines.append("  ⏭️  " + to_platform + "/" + t + "/" + name + " 已存在")
+            continue
+        with open(dst_file, "a") as f:
+            if os.path.getsize(dst_file) > 0:
+                f.write("\n")
+            f.write("[" + section + "." + quote_key(name) + "]\n")
+            write_toml_fields(f, "", fields)
+            f.write("\n")
+        lines.append("  + " + to_platform + "/" + t + "/" + name)
+        total += 1
+
+for l in lines:
+    print(l)
+print("TOTAL=" + str(total))
+' 2>/dev/null || die "同步失败") || true
+
+  # 显示输出（过滤掉 TOTAL 行）
+  echo "$output" | grep -v '^TOTAL=' || true
+  synced_total=$(echo "$output" | grep '^TOTAL=' | sed 's/^TOTAL=//')
+
+  # 重新加载 manifest
+  MANIFEST_JSON="$(load_manifest)"
+
+  echo ""
+  if [[ "${synced_total:-0}" -eq 0 ]]; then
+    log_info "无可同步的资源（目标平台已全部存在）"
+  else
+    log_info "已同步 $synced_total 个资源到 $TO_PLATFORM"
+  fi
+}
+
+# 从 GitHub 源导入资源（下载 + 添加 manifest + 安装）
+cmd_import() {
+  [[ -n "$SOURCE_IMPORT" ]] || die "import 需要 --source 参数"
+
+  local import_type="${RESOURCE_TYPE:-rule}"
+  local import_match="${MATCH_IMPORT:-}"
+
+  echo ""
+  echo "=== 导入: $SOURCE_IMPORT ==="
+
+  # 解析 GitHub URL → owner/repo
+  local repo_path="${SOURCE_IMPORT#https://github.com/}"
+  repo_path="${repo_path%.git}"
+  local owner="${repo_path%%/*}"
+  local repo="${repo_path#*/}"
+  local api_url="https://api.github.com/repos/$owner/$repo/contents/rules"
+  local import_dir="$SCRIPT_DIR/imported/${repo}/rules"
+  mkdir -p "$import_dir"
+
+  # Step 1: 从 GitHub API 获取文件列表 → 按 match 过滤 → 下载
+  echo ""
+  echo "--- 下载资源 ---"
+  local tmpfile output total
+  tmpfile=$(mktemp)
+  output=$(export IMPORT_MATCH="$import_match" IMPORT_DIR="$import_dir" IMPORT_API="$api_url" TMPFILE="$tmpfile"; python3 -c '
+import json, urllib.request, os, sys
+
+api_url = os.environ["IMPORT_API"]
+match_str = os.environ.get("IMPORT_MATCH", "")
+import_dir = os.environ["IMPORT_DIR"]
+tmpfile = os.environ.get("TMPFILE", "")
+
+match_keywords = [k.strip().lower() for k in match_str.split(",")] if match_str else []
+
+try:
+    req = urllib.request.Request(api_url, headers={"User-Agent": "manage.sh"})
+    with urllib.request.urlopen(req) as resp:
+        files = json.loads(resp.read())
+except Exception as e:
+    print("ERROR: 获取文件列表失败: " + str(e), file=sys.stderr)
+    sys.exit(1)
+
+# 写 entries 到临时文件，同时打印进度
+entries = []
+for f in files:
+    name = f["name"]
+    if not name.endswith(".mdc"):
+        continue
+    basename = name[:-4]
+
+    if match_keywords:
+        name_lower = basename.lower()
+        if not any(kw in name_lower for kw in match_keywords):
+            continue
+
+    dest = os.path.join(import_dir, name)
+    try:
+        req = urllib.request.Request(f["download_url"], headers={"User-Agent": "manage.sh"})
+        with urllib.request.urlopen(req) as resp:
+            content = resp.read()
+        with open(dest, "wb") as df:
+            df.write(content)
+        entries.append((basename, dest))
+        print("  + 下载: " + name)
+    except Exception as e:
+        print("  \u26a0\ufe0f  下载失败 " + name + ": " + str(e), file=sys.stderr)
+
+if tmpfile:
+    with open(tmpfile, "w") as tf:
+        for bn, p in entries:
+            tf.write(bn + "|" + p + "\n")
+
+print("TOTAL=" + str(len(entries)))
+' 2>/dev/null) || true
+
+  # 显示输出
+  echo "$output" | grep -v '^TOTAL=' || true
+  total=$(echo "$output" | grep '^TOTAL=' | sed 's/^TOTAL=//')
+
+  if [[ "${total:-0}" -eq 0 ]]; then
+    rm -f "$tmpfile"
+    log_info "没有匹配的资源"
+    return 0
+  fi
+
+  # Step 2: 添加到所有平台的 manifest
+  echo ""
+  echo "--- 添加到 manifest ---"
+  local all_platforms=(${PLATFORMS[@]})
+  local added=0
+
+  while IFS='|' read -r name path; do
+    [[ -z "$name" ]] && continue
+    for platform in "${all_platforms[@]}"; do
+      export CURRENT_PLATFORM="$platform"
+      export CURRENT_TYPE="$import_type"
+
+      if get_resources "$import_type" 2>/dev/null | grep -qx "$name"; then
+        echo "  ⏭️  $platform/$import_type/$name 已存在"
+        continue
+      fi
+
+      add_manifest_entry "$platform" "$import_type" "$name" "source.type=local" "source.path=$path"
+      echo "  + $platform/$import_type/$name"
+      ((added++))
+    done
+  done < "$tmpfile"
+  rm -f "$tmpfile"
+
+  echo ""
+  log_info "已添加 $added 个资源到 manifest"
+
+  # Step 3: 自动安装到所有平台
+  echo ""
+  echo "--- 安装到各平台 ---"
+  # 暂存用户指定的 PLATFORM，确保安装到所有平台
+  local saved_platform="$PLATFORM"
+  PLATFORM=""
+  cmd_install
+  PLATFORM="$saved_platform"
+}
 cmd_add() {
   [[ -n "$PLATFORM" ]] || die "add 需要 --platform 参数"
   [[ -n "$RESOURCE_TYPE" ]] || die "add 需要 --type 参数"
@@ -525,7 +770,8 @@ print('ok')
   echo "=== 资源完整性检查 ==="
   for platform in "${all_platforms[@]}"; do
     export CURRENT_PLATFORM="$platform"
-    for t in skill mcp plugin; do
+    local doctor_types=(${RESOURCE_TYPE:-skill mcp plugin rule})
+    for t in "${doctor_types[@]}"; do
       export CURRENT_TYPE="$t"
       local resources_str
       resources_str="$(get_resources "$t" 2>/dev/null || true)"
@@ -552,6 +798,81 @@ print('ok')
     log_warn "发现 $issues 个问题"
   fi
   return "$issues"
+}
+
+# 状态概览 — 紧凑表格展示各平台安装/清单对比
+cmd_status() {
+  local all_platforms=(${PLATFORMS[@]})
+  local total_platforms=0
+  local total_manifest=0
+  local total_issues=0
+
+  printf "%-10s %-10s %-10s %-10s %-10s %s\n" "Platform" "Skills" "MCPs" "Plugins" "Rules" "Diff"
+
+  for platform in "${all_platforms[@]}"; do
+    export CURRENT_PLATFORM="$platform"
+
+    local list_func="${platform}_list_installed"
+    if ! declare -F "$list_func" &>/dev/null; then
+      continue
+    fi
+
+    local installed=$($list_func 2>/dev/null || true)
+
+    local skills_installed=0 skills_manifest=0
+    local mcps_installed=0 mcps_manifest=0
+    local plugins_installed=0 plugins_manifest=0
+    local rules_installed=0 rules_manifest=0
+
+    # 统计已安装数量
+    if [[ -n "$installed" ]]; then
+      skills_installed=$(echo "$installed" | grep -c "^skill " || true)
+      mcps_installed=$(echo "$installed" | grep -c "^mcp " || true)
+      plugins_installed=$(echo "$installed" | grep -c "^plugin " || true)
+      rules_installed=$(echo "$installed" | grep -c "^rule " || true)
+    fi
+
+    # 统计 manifest 数量
+    local status_types=(${RESOURCE_TYPE:-skill mcp plugin rule})
+    for t in "${status_types[@]}"; do
+      export CURRENT_TYPE="$t"
+      local resources_str
+      resources_str="$(get_resources "$t" 2>/dev/null || true)"
+      if [[ -n "$resources_str" ]]; then
+        local resources=($resources_str)
+        case "$t" in
+          skill)  skills_manifest=${#resources[@]} ;;
+          mcp)    mcps_manifest=${#resources[@]} ;;
+          plugin) plugins_manifest=${#resources[@]} ;;
+          rule)   rules_manifest=${#resources[@]} ;;
+        esac
+      fi
+    done
+
+    # 计算 diff（manifest 有但未安装的资源数）
+    local diff=0
+    for t in "${status_types[@]}"; do
+      export CURRENT_TYPE="$t"
+      local resources_str
+      resources_str="$(get_resources "$t" 2>/dev/null || true)"
+      [[ -z "$resources_str" ]] && continue
+      local resources=($resources_str)
+      for r in "${resources[@]}"; do
+        if ! echo "$installed" | grep -q "^$t $r "; then
+          ((diff++))
+        fi
+      done
+    done
+
+    printf "%-10s %-10s %-10s %-10s %-10s %s\n" "$platform" "${skills_installed}/${skills_manifest}" "${mcps_installed}/${mcps_manifest}" "${plugins_installed}/${plugins_manifest}" "${rules_installed}/${rules_manifest}" "$diff"
+
+    ((total_platforms++))
+    ((total_manifest+=skills_manifest+mcps_manifest+plugins_manifest+rules_manifest))
+    ((total_issues+=diff))
+  done
+
+  printf "%s\n" "──────────────────────────────────────────────────────"
+  printf "Total: %d platforms, %d resources, %d issues\n" "$total_platforms" "$total_manifest" "$total_issues"
 }
 
 main() {
@@ -590,7 +911,14 @@ main() {
     remove)
       cmd_remove
       ;;
+    sync)
+      cmd_sync
+      ;;
+    import)
+      cmd_import
+      ;;
     update)           cmd_update      ;;
+  status)           cmd_status      ;;
   doctor)           cmd_doctor      ;;
   "")
       usage

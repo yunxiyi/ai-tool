@@ -18,7 +18,7 @@ help:           ## 显示帮助
 	@echo ""
 	@echo "Options:"
 	@echo "  PLATFORM=trae   限定平台 (codex|claude|opencode|trae)"
-	@echo "  TYPE=skill      限定资源类型 (skill|mcp|plugin)"
+	@echo "  TYPE=skill      限定资源类型 (skill|mcp|plugin|rule)"
 	@echo "  NAME=foo        限定资源名"
 	@echo ""
 	@echo "Examples:"
@@ -47,6 +47,9 @@ uninstall:       ## 卸载已安装的资源
 
 doctor:          ## 健康检查
 	./manage.sh doctor $(_mk_args)
+
+status:          ## 全局资源状态概览
+	./manage.sh status $(_mk_args)
 
 test:           ## 运行幂等性测试
 	bash tests/test_install.sh

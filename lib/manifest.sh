@@ -54,7 +54,7 @@ get_resources() {
   python3 -c "
 import sys, json
 data = json.loads('$MANIFEST_JSON')
-section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins'}
+section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins', 'rule': 'rules'}
 section = section_map.get('$type', '${type}s')
 for key in data.get('$platform', {}).get(section, {}):
     print(key)
@@ -73,7 +73,7 @@ get_resource_field() {
   python3 -c "
 import sys, json
 data = json.loads('$MANIFEST_JSON')
-section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins'}
+section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins', 'rule': 'rules'}
 section = section_map.get('$type', '${type}s')
 val = data.get('$platform', {}).get(section, {}).get('$name', {})
 if not val:
@@ -160,7 +160,7 @@ def write_toml_fields(f, prefix, fields):
             f.write(f'{prefix}{k} = {json.dumps(str(v))}\\n')
 
 file = '$file'
-section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins'}
+section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins', 'rule': 'rules'}
 section = section_map.get('$type', '${type}s')
 name = '$name'
 
@@ -223,7 +223,7 @@ def write_toml_fields(f, prefix, fields):
             f.write(f'{prefix}{k} = {json.dumps(str(v))}\\n')
 
 file = '$file'
-section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins'}
+section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins', 'rule': 'rules'}
 section = section_map.get('$type', '${type}s')
 name = '$name'
 field = '$field'
@@ -277,7 +277,7 @@ get_resource_all_fields() {
   python3 -c "
 import sys, json
 data = json.loads('$MANIFEST_JSON')
-section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins'}
+section_map = {'skill': 'skills', 'mcp': 'mcp', 'plugin': 'plugins', 'rule': 'rules'}
 section = section_map.get('$type', '${type}s')
 val = data.get('$platform', {}).get(section, {}).get('$name', {})
 if not val:

@@ -26,6 +26,13 @@ for name in cfg.get('mcpServers', {}):
 for name in cfg.get('plugins', {}):
     print(f'plugin {name} installed')
 " 2>/dev/null || true
+
+  # rules: 列出 ~/.config/opencode/rules/ 下的文件
+  if [[ -d "$HOME/.config/opencode/rules" ]]; then
+    for f in "$HOME/.config/opencode/rules"/*; do
+      [[ -f "$f" ]] && echo "rule $(basename "$f") installed"
+    done
+  fi
 }
 
 # 安装 skill（编辑 skills.paths）
@@ -218,8 +225,42 @@ with open('$OPENCODE_CONFIG') as f:
     cfg = json.load(f)
 s = cfg.get('mcpServers', {}).get('$name')
 if s:
-    print(f'command={s.get(\"command\", \"\")}')
+    cmd = s.get('command', '')
+    print(f'command={cmd}')
     print(f'args={json.dumps(s.get(\"args\", []))}')
+    _c = cmd.strip()
+    if _c.startswith('npx ') or _c.startswith('npx -y '):
+        parts = _c.split()
+        pkg = None
+        for p in parts[1:]:
+            if not p.startswith('-'):
+                pkg = p
+                break
+        if pkg:
+            print(f'source.type=npm_install')
+            print(f'install.package={pkg}')
+        else:
+            print(f'source.type=local')
+            print(f'source.path={cmd}')
+    elif _c.startswith('uvx ') or _c.startswith('uvx --'):
+        parts = _c.split()
+        pkg = None
+        for p in parts[1:]:
+            if not p.startswith('-'):
+                pkg = p
+                break
+        if pkg:
+            print(f'source.type=pip_install')
+            print(f'install.package={pkg}')
+        else:
+            print(f'source.type=local')
+            print(f'source.path={cmd}')
+    elif _c.startswith('go ') or _c.startswith('go-run '):
+        print(f'source.type=local')
+        print(f'source.path={cmd}')
+    else:
+        print(f'source.type=local')
+        print(f'source.path={cmd}')
 " 2>/dev/null
 }
 
@@ -240,4 +281,47 @@ for key in cfg.get('plugins', {}):
         print(f'source.name={mkt}')
         sys.exit(0)
 " 2>/dev/null
+}
+
+# ===== Rule =====
+
+OPENCODE_RULES_DIR="$HOME/.config/opencode/rules"
+
+# 安装 rule
+opencode_install_rule() {
+  local name="$1"
+  local src
+  src=$(install_resource "$name" "rule")
+  [[ -z "$src" ]] && die "rule $name 资源获取失败"
+
+  mkdir -p "$OPENCODE_RULES_DIR"
+  local target="$OPENCODE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    log_info "OpenCode: rule $name 已存在"
+    return 0
+  fi
+  cp "$src" "$target"
+  log_info "OpenCode: rule $name 已安装 ($src → $target)"
+}
+
+# 卸载 rule
+opencode_uninstall_rule() {
+  local name="$1"
+  local target="$OPENCODE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    rm "$target"
+    log_info "OpenCode: rule $name 已卸载"
+  else
+    log_info "OpenCode: rule $name 未安装"
+  fi
+}
+
+# 描述 rule
+opencode_describe_rule() {
+  local name="$1"
+  local target="$OPENCODE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    echo "source.type=local"
+    echo "source.path=$target"
+  fi
 }

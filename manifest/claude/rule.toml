@@ -1,0 +1,120 @@
+[rules.blender-python-addon]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/blender-python-addon.mdc"
+
+[rules.dragonruby-best-practices-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc"
+
+[rules.go-backend-scalability-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/go-backend-scalability-cursorrules-prompt-file.mdc"
+
+[rules.go-servemux-rest-api-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/go-servemux-rest-api-cursorrules-prompt-file.mdc"
+
+[rules.go-temporal-dsl-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/go-temporal-dsl-prompt-file.mdc"
+
+[rules.go]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/go.mdc"
+
+[rules.google-adk]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/google-adk.mdc"
+
+[rules.htmx-django-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/htmx-django-cursorrules-prompt-file.mdc"
+
+[rules.htmx-go-basic-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/htmx-go-basic-cursorrules-prompt-file.mdc"
+
+[rules.htmx-go-fiber-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/htmx-go-fiber-cursorrules-prompt-file.mdc"
+
+[rules.linux-nvidia-cuda-python-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/linux-nvidia-cuda-python-cursorrules-prompt-file.mdc"
+
+[rules.nodejs-mongodb-cursorrules-prompt-file-tutorial]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/nodejs-mongodb-cursorrules-prompt-file-tutorial.mdc"
+
+[rules.nodejs-mongodb-jwt-express-react-cursorrules-promp]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/nodejs-mongodb-jwt-express-react-cursorrules-promp.mdc"
+
+[rules.python--typescript-guide-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python--typescript-guide-cursorrules-prompt-file.mdc"
+
+[rules.python-312-fastapi-best-practices-cursorrules-prom]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-312-fastapi-best-practices-cursorrules-prom.mdc"
+
+[rules.python-containerization-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-containerization-cursorrules-prompt-file.mdc"
+
+[rules.python-cursorrules-prompt-file-best-practices]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-cursorrules-prompt-file-best-practices.mdc"
+
+[rules.python-developer-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-developer-cursorrules-prompt-file.mdc"
+
+[rules.python-django-best-practices-cursorrules-prompt-fi]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-django-best-practices-cursorrules-prompt-fi.mdc"
+
+[rules.python-fastapi-best-practices-cursorrules-prompt-f]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-fastapi-best-practices-cursorrules-prompt-f.mdc"
+
+[rules.python-fastapi-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-fastapi-cursorrules-prompt-file.mdc"
+
+[rules.python-fastapi-scalable-api-cursorrules-prompt-fil]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-fastapi-scalable-api-cursorrules-prompt-fil.mdc"
+
+[rules.python-flask-json-guide-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-flask-json-guide-cursorrules-prompt-file.mdc"
+
+[rules.python-github-setup-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-github-setup-cursorrules-prompt-file.mdc"
+
+[rules.python-llm-ml-workflow-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-llm-ml-workflow-cursorrules-prompt-file.mdc"
+
+[rules.python-projects-guide-cursorrules-prompt-file]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python-projects-guide-cursorrules-prompt-file.mdc"
+
+[rules.python]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/python.mdc"
+
+[rules.rust-general]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/rust-general.mdc"
+
+[rules.rust]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/rust.mdc"
+
+[rules.temporal-python-cursorrules]
+source.type = "local"
+source.path = "/Users/huangrongchao/go/src/github.com/personal/zshrc/imported/awesome-cursorrules/rules/temporal-python-cursorrules.mdc"
+

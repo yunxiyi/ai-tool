@@ -1,0 +1,8 @@
+[skills.super-ralph]
+source.type = "local"
+source.path = "/Users/huangrongchao/.codex/super-ralph/plugins/super-ralph/skills"
+
+[skills."/Users/huangrongchao/.codex/super-ralph/plugins/super-ralph/skills"]
+source.type = "local"
+source.path = "/Users/huangrongchao/.codex/super-ralph/plugins/super-ralph/skills"
+

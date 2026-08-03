@@ -71,6 +71,13 @@ for name in data.get('plugins', {}):
     print(f'plugin {name} installed')
 " 2>/dev/null || true
   fi
+
+  # rules: 列出 ~/.trae-cn/rules/ 下的文件
+  if [[ -d "$TRAE_HOME/rules" ]]; then
+    for f in "$TRAE_HOME/rules"/*; do
+      [[ -f "$f" ]] && echo "rule $(basename "$f") installed"
+    done
+  fi
 }
 
 # 安装 skill
@@ -236,13 +243,47 @@ for root, dirs, files in os.walk(mcps_dir):
                 meta = json.load(f)
             if meta.get('server_name') == name:
                 if meta.get('command'):
-                    print(f'command={meta[\"command\"]}')
-                if meta.get('args') is not None:
-                    print(f'args={json.dumps(meta[\"args\"])}')
+                    cmd = meta['command']
+                    print(f'command={cmd}')
+                    if meta.get('args') is not None:
+                        print(f'args={json.dumps(meta[\"args\"])}')
+                    _c = cmd.strip()
+                    if _c.startswith('npx ') or _c.startswith('npx -y '):
+                        parts = _c.split()
+                        pkg = None
+                        for p in parts[1:]:
+                            if not p.startswith('-'):
+                                pkg = p
+                                break
+                        if pkg:
+                            print(f'source.type=npm_install')
+                            print(f'install.package={pkg}')
+                        else:
+                            print(f'source.type=local')
+                            print(f'source.path={root}')
+                    elif _c.startswith('uvx ') or _c.startswith('uvx --'):
+                        parts = _c.split()
+                        pkg = None
+                        for p in parts[1:]:
+                            if not p.startswith('-'):
+                                pkg = p
+                                break
+                        if pkg:
+                            print(f'source.type=pip_install')
+                            print(f'install.package={pkg}')
+                        else:
+                            print(f'source.type=local')
+                            print(f'source.path={root}')
+                    elif _c.startswith('go ') or _c.startswith('go-run '):
+                        print(f'source.type=local')
+                        print(f'source.path={root}')
+                    else:
+                        print(f'source.type=local')
+                        print(f'source.path={root}')
                 if meta.get('url'):
                     print(f'url={meta[\"url\"]}')
-                print(f'source.type=local')
-                print(f'source.path={root}')
+                    print(f'source.type=local')
+                    print(f'source.path={root}')
                 break
         except Exception:
             pass
@@ -255,4 +296,47 @@ trae_describe_plugin() {
   local name="$1"
   # TRAE 插件由 TRAE 自身管理，无需安装
   echo "install.type=none"
+}
+
+# ===== Rule =====
+
+TRAE_RULES_DIR="$TRAE_HOME/rules"
+
+# 安装 rule
+trae_install_rule() {
+  local name="$1"
+  local src
+  src=$(install_resource "$name" "rule")
+  [[ -z "$src" ]] && die "rule $name 资源获取失败"
+
+  mkdir -p "$TRAE_RULES_DIR"
+  local target="$TRAE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    log_info "TRAE: rule $name 已存在"
+    return 0
+  fi
+  cp "$src" "$target"
+  log_info "TRAE: rule $name 已安装 ($src → $target)"
+}
+
+# 卸载 rule
+trae_uninstall_rule() {
+  local name="$1"
+  local target="$TRAE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    rm "$target"
+    log_info "TRAE: rule $name 已卸载"
+  else
+    log_info "TRAE: rule $name 未安装"
+  fi
+}
+
+# 描述 rule
+trae_describe_rule() {
+  local name="$1"
+  local target="$TRAE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    echo "source.type=local"
+    echo "source.path=$target"
+  fi
 }

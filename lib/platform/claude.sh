@@ -29,6 +29,13 @@ for key in data.get('enabledPlugins', {}):
     print(f'plugin {key} installed')
 " 2>/dev/null || true
   fi
+
+  # rules: 列出 ~/.claude/rules/ 下的文件
+  if [[ -d "$CLAUDE_HOME/rules" ]]; then
+    for f in "$CLAUDE_HOME/rules"/*; do
+      [[ -f "$f" ]] && echo "rule $(basename "$f") installed"
+    done
+  fi
 }
 
 # 安装 mcp
@@ -217,8 +224,39 @@ if not entry:
     sys.exit(0)
 cmd = entry.get('command', '')
 print(f'command={cmd}')
-print(f'source.type=local')
-print(f'source.path={cmd}')
+_c = cmd.strip()
+if _c.startswith('npx ') or _c.startswith('npx -y '):
+    parts = _c.split()
+    pkg = None
+    for p in parts[1:]:
+        if not p.startswith('-'):
+            pkg = p
+            break
+    if pkg:
+        print(f'source.type=npm_install')
+        print(f'install.package={pkg}')
+    else:
+        print(f'source.type=local')
+        print(f'source.path={cmd}')
+elif _c.startswith('uvx ') or _c.startswith('uvx --'):
+    parts = _c.split()
+    pkg = None
+    for p in parts[1:]:
+        if not p.startswith('-'):
+            pkg = p
+            break
+    if pkg:
+        print(f'source.type=pip_install')
+        print(f'install.package={pkg}')
+    else:
+        print(f'source.type=local')
+        print(f'source.path={cmd}')
+elif _c.startswith('go ') or _c.startswith('go-run '):
+    print(f'source.type=local')
+    print(f'source.path={cmd}')
+else:
+    print(f'source.type=local')
+    print(f'source.path={cmd}')
 args = entry.get('args')
 if args is not None:
     print(f'args={json.dumps(args)}')
@@ -261,4 +299,47 @@ print('source.type=marketplace')
 print(f'source.name={mkt_name}')
 print(f'source.repo={repo}')
 " 2>/dev/null
+}
+
+# ===== Rule =====
+
+CLAUDE_RULES_DIR="$CLAUDE_HOME/rules"
+
+# 安装 rule
+claude_install_rule() {
+  local name="$1"
+  local src
+  src=$(install_resource "$name" "rule")
+  [[ -z "$src" ]] && die "rule $name 资源获取失败"
+
+  mkdir -p "$CLAUDE_RULES_DIR"
+  local target="$CLAUDE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    log_info "Claude: rule $name 已存在"
+    return 0
+  fi
+  cp "$src" "$target"
+  log_info "Claude: rule $name 已安装 ($src → $target)"
+}
+
+# 卸载 rule
+claude_uninstall_rule() {
+  local name="$1"
+  local target="$CLAUDE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    rm "$target"
+    log_info "Claude: rule $name 已卸载"
+  else
+    log_info "Claude: rule $name 未安装"
+  fi
+}
+
+# 描述 rule
+claude_describe_rule() {
+  local name="$1"
+  local target="$CLAUDE_RULES_DIR/$name"
+  if [[ -f "$target" ]]; then
+    echo "source.type=local"
+    echo "source.path=$target"
+  fi
 }

@@ -10,7 +10,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-log_info()  { echo -e "${GREEN}✓${NC} $*"; }
+log_info()  { echo -e "${GREEN}✓${NC} $*" >&2; }
 log_warn()  { echo -e "${YELLOW}⚠${NC} $*"; }
 log_error() { echo -e "${RED}✗${NC} $*" >&2; }
 die()       { log_error "$*"; exit 1; }
